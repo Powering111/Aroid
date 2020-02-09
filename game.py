@@ -3,6 +3,7 @@ from pygame.locals import *
 from pygame.sprite import Sprite
 from pygame.surface import Surface
 from pygame.color import Color
+import queue
 # Initialize the game engine
 pygame.init()
 BLACK= ( 0,  0,  0)
@@ -14,21 +15,87 @@ RED  = (255,  0,  0)
 # make variables
 size  = [1024,720]
 screen= pygame.display.set_mode(size,DOUBLEBUF)
-# Initialize
 pygame.display.set_caption("Aroid 1.0.0")
+clock = pygame.time.Clock()
+#load
 arrowgroup = pygame.sprite.Group()
 arrowimg=[]
 for x in range(2):
     arrowimg.append(pygame.image.load('images/arrow_'+str(x+1)+'.png').convert_alpha())
-#Loop until the user clicks the close button.
 playerimg=[]
 for x in range(4):
     playerimg.append(pygame.image.load('images/player_'+str(x+1)+'.png'))
-clock = pygame.time.Clock()
-player_mode = 1
-player_x=512
-player_y=360
-speed = 15
+# Initialize
+
+backgroundColor=WHITE
+ongroundColor=BLACK
+levelName="Level"
+levelAuthor="Troll"
+levelDifficulty=1
+levelTime=0
+level=queue.Queue()
+nowTick=0
+nowEvent=queue.Queue()
+def loadLevel(levelfilename):
+    global levelName,levelAuthor,levelDifficulty,levelTime,level
+    #level load
+    lvl = open("levels/"+levelfilename+"/level",'r')
+    levelName = lvl.readline()
+    levelAuthor=lvl.readline()
+    levelDifficulty=int(lvl.readline())
+    levelTime = int(lvl.readline())
+    #level load
+    for nowsec in range(levelTime): # as 1 second
+        oneline=lvl.readline().strip().split()# 1 line
+        for x in range(len(oneline)):
+            level.put(int(oneline[x]))
+    lvl.close()
+def levelEvent():
+    global level,player
+    # 1 tick
+    event=level.get()
+    for e in range(event):# 1 event
+        eventType=level.get()
+        if eventType==1:
+            ak=level.get()
+            bk=level.get()
+            ck=level.get()
+            backgroundColor=(ak,bk,ck)
+            ongroundColor=(255-ak,255-bk,255-ck)
+        elif eventType==2:
+            arrowType=level.get()
+            arrowPos=level.get()
+            arrowSpeed=level.get()
+            newarrow(arrowPos,arrowSpeed,arrowType)
+        elif eventType==3:
+            t=level.get()
+            if t==1:
+                player.mode=level.get()
+            elif t==2:
+                player.Damage(level.get())
+            elif t==3:
+                player.SH=level.get()
+            elif t==4:
+                player.DEF+=level.get()
+            elif t==5:
+                player.DEF=level.get()
+            elif t==6:
+                player.IDEF+=level.get()
+            elif t==7:
+                player.IDEF=level.get()
+            elif t==8:
+                player.HP+=level.get()
+            elif t==9:
+                player.HP=level.get()
+            elif t==10:
+                player.SPEED+=level.get()
+            elif t==11:
+                player.SPEED=level.get()
+            elif t==12:
+                player.MHP+=level.get()
+            elif t==13:
+                player.MHP=level.get()
+    player.speed=int((player.SPEED*15)/100)
 def rotate(image, rect, angle):
     rot_image = pygame.transform.rotate(image, angle)
     rot_rect = rot_image.get_rect(center=rect.center)
@@ -36,10 +103,10 @@ def rotate(image, rect, angle):
 class Player(Sprite):#(212,60),(812,660)
     def __init__(self):
         Sprite.__init__(self)
-        self.sprite_image='images/player_1.png'
         self.sprite_width=64
         self.sprite_height=64
-        self.image = pygame.image.load(self.sprite_image).convert_alpha()
+        self.mode=0
+        self.image = playerimg[self.mode]
         self.image.blit(self.image,(0,0))
         self.rect = self.image.get_rect()
         self.rect.x=480
@@ -48,29 +115,37 @@ class Player(Sprite):#(212,60),(812,660)
         self.moveUp=False
         self.moveLeft=False
         self.moveRight=False
+        self.speed=15
+        self.SPEED=100
+        self.HP=10
+        self.MHP=10
+        self.DEF=0
+        self.SH=0
+        self.IDEF=0
     def update(self):
         global arrowgroup
+        
         #move variable
         if self.moveDown ==True and self.rect.y < 592:
             if self.moveLeft==True or self.moveRight==True:
-                self.rect.y=self.rect.y+int(speed*0.7)
+                self.rect.y=self.rect.y+int(self.speed*0.7)
             else:
-                self.rect.y=self.rect.y+speed
+                self.rect.y=self.rect.y+int(self.speed)
         if self.moveUp==True and self.rect.y > 60:
             if self.moveLeft==True or self.moveRight==True:
-                self.rect.y=self.rect.y-int(speed*0.7)
+                self.rect.y=self.rect.y-int(self.speed*0.7)
             else:
-                self.rect.y=self.rect.y-speed
+                self.rect.y=self.rect.y-int(self.speed)
         if self.moveLeft ==True and self.rect.x > 212:
             if self.moveUp==True or self.moveDown==True:
-                self.rect.x = self.rect.x-int(speed*0.7)
+                self.rect.x = self.rect.x-int(self.speed*0.7)
             else:
-                self.rect.x = self.rect.x-speed
+                self.rect.x = self.rect.x-int(self.speed)
         if self.moveRight==True and self.rect.x < 744:
             if self.moveUp==True or self.moveDown==True:
-                self.rect.x=self.rect.x+int(speed*0.7)
+                self.rect.x=self.rect.x+int(self.speed*0.7)
             else:
-                self.rect.x=self.rect.x+speed
+                self.rect.x=self.rect.x+int(self.speed)
         #Fix out of Field
         if self.rect.y> 592:
             self.rect.y=592
@@ -84,6 +159,18 @@ class Player(Sprite):#(212,60),(812,660)
             if self.rect.colliderect(ar.rect):
                 ar.kill()
                 del ar
+    def damage(self,d):
+        if self.SH==1:
+            self.SH=0
+            return
+        if self.DEF<d:
+            d-=self.DEF
+            self.DEF=0
+        else:
+            DEF-=d
+            d=0
+        self.HP-=d
+        return
     def draw():
         screen.blit(self.image,[self.rect.x,self.rect.y])
 class Arrow(Sprite):
@@ -135,18 +222,14 @@ def newarrow(pos,speed,mode):
     ar = Arrow(pos,speed,mode)
     arrowgroup.add(ar)
 def rungame(lvlname):
-    global player_mode,player
-    #level load
-    #lvl = open("levels/"+lvlname,'r')
-    #level_name = lvl.readline()
-    #level_time = int(lvl.readline())
-    #lvl.close()
-
+    global player_mode,player,nowTick
+    loadLevel(lvlname)
     #init
     finishGame= False
     player = Player()
     playergroup=pygame.sprite.Group()
     playergroup.add(player)
+    nextTick=0
     while not finishGame:
         #set 60FPS
         clock.tick(60)
@@ -182,20 +265,28 @@ def rungame(lvlname):
                 if event.key ==pygame.K_4:
                     newarrow(350,10,0)
         #update
+        
         player.update()
         for ar in arrowgroup:
             ar.update()
-        screen.fill(WHITE)
+        if nextTick==0:
+            levelEvent()
+            nextTick=6
+            nowTick+=1
+        nextTick-=1
+        if nowTick==levelTime:
+            return 100
+        screen.fill(backgroundColor)
 
         #draw after here
         
         arrowgroup.draw(screen)
         playergroup.draw(screen)
-        pygame.draw.rect(screen,RED,[player.rect.x,player.rect.y,64,64],3)
-        pygame.draw.rect(screen,BLACK,[212,60,600,600],5)
+        
+        pygame.draw.rect(screen,ongroundColor,[212,60,600,600],5)
 
         #draw before here
         pygame.display.flip()
 
-rungame("1")
+rungame("Tutorial_1")
 pygame.quit()
