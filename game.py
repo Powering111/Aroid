@@ -4,38 +4,43 @@ from pygame.sprite import Sprite
 from pygame.surface import Surface
 from pygame.color import Color
 import queue
-# Initialize the game engine
-pygame.init()
-BLACK= ( 0,  0,  0)
-WHITE= (255,255,255)
-BLUE = ( 0,  0,255)
-GREEN= ( 0,255,  0)
-RED  = (255,  0,  0)
- 
-# make variables
-size  = [1024,720]
-screen= pygame.display.set_mode(size,DOUBLEBUF)
-pygame.display.set_caption("Aroid 1.0.0")
-clock = pygame.time.Clock()
-#load
-arrowgroup = pygame.sprite.Group()
-arrowimg=[]
-for x in range(2):
-    arrowimg.append(pygame.image.load('images/arrow_'+str(x+1)+'.png').convert_alpha())
-playerimg=[]
-for x in range(4):
-    playerimg.append(pygame.image.load('images/player_'+str(x+1)+'.png'))
-# Initialize
 
-backgroundColor=WHITE
-ongroundColor=BLACK
-levelName="Level"
-levelAuthor="Troll"
-levelDifficulty=1
-levelTime=0
-level=queue.Queue()
-nowTick=0
-nowEvent=queue.Queue()
+def init():
+    global BLACK,WHITE,BLUE,GREEN,RED,size,screen,clock,arrowgroup,arrowimg,playerimg,font,backgroundColor,ongroundColor,levelName,levelAuthor,levelDifficulty,levelTime,level,gameEnd,nowTick,nextTick,nowEvent
+    # Initialize the game engine
+    pygame.init()
+    pygame.font.init()
+    BLACK= ( 0,  0,  0)
+    WHITE= (255,255,255)
+    BLUE = ( 0,  0,255)
+    GREEN= ( 0,255,  0)
+    RED  = (255,  0,  0)
+
+    # make variables
+    size  = [1024,720]
+    screen= pygame.display.set_mode(size,DOUBLEBUF)
+    pygame.display.set_caption("Aroid 1.0.0")
+    clock = pygame.time.Clock()
+    #load
+    arrowgroup = pygame.sprite.Group()
+    arrowimg=[]
+    for x in range(2):
+        arrowimg.append(pygame.image.load('images/arrow_'+str(x+1)+'.png').convert_alpha())
+    playerimg=[]
+    for x in range(4):
+        playerimg.append(pygame.image.load('images/player_'+str(x+1)+'.png'))
+    # Initialize
+    font=pygame.font.Font('./NanumGothic.ttf',30)
+    backgroundColor=WHITE
+    ongroundColor=BLACK
+    levelName="Level"
+    levelAuthor="Troll"
+    levelDifficulty=1
+    levelTime=0
+    level=queue.Queue()
+    nowTick=0
+    gameEnd=-1
+    nowEvent=queue.Queue()
 def loadLevel(levelfilename):
     global levelName,levelAuthor,levelDifficulty,levelTime,level
     #level load
@@ -51,8 +56,10 @@ def loadLevel(levelfilename):
             level.put(int(oneline[x]))
     lvl.close()
 def levelEvent():
-    global level,player
+    global level,player,backgroundColor,ongroundColor
     # 1 tick
+    if level.empty():
+        return
     event=level.get()
     for e in range(event):# 1 event
         eventType=level.get()
@@ -95,7 +102,19 @@ def levelEvent():
                 player.MHP+=level.get()
             elif t==13:
                 player.MHP=level.get()
+    if player.SPEED>200:
+        player.SPEED=200
+    elif player.SPEED<20:
+        player.SPEED=20
     player.speed=int((player.SPEED*15)/100)
+    if player.HP>player.MHP:
+        player.HP=player.MHP
+    if player.DEF>3:
+        player.DEF=3
+    if player.SH>1:
+        player.SH=1
+    if player.HP<=0:
+        player.HP=0
 def rotate(image, rect, angle):
     rot_image = pygame.transform.rotate(image, angle)
     rot_rect = rot_image.get_rect(center=rect.center)
@@ -157,6 +176,13 @@ class Player(Sprite):#(212,60),(812,660)
             self.rect.x=744
         for ar in arrowgroup:
             if self.rect.colliderect(ar.rect):
+                #TODO make things
+                m=ar.mode
+                if m==0:
+                    self.damage(2)
+                elif m==1:
+                    self.damage(2)
+                    self.MHP+=1
                 ar.kill()
                 del ar
     def damage(self,d):
@@ -211,7 +237,7 @@ class Arrow(Sprite):
         elif self.pos>=300 and self.pos<400:
             self.rect.x=self.rect.x+self.speed
         if (self.rect.y >= 660 and (self.pos>=0 and self.pos<100)) or (self.rect.x<=212 and(self.pos>=100 and self.pos<200)) or (self.rect.y<=60 and (self.pos>=200 and self.pos<300)) or (self.rect.x>=812 and(self.pos>=300 and self.pos<400)):
-            #TODO something
+            #TODO Event when Purple and pink and gray arrow
             self.kill()
             del self
     def draw():
@@ -222,7 +248,9 @@ def newarrow(pos,speed,mode):
     ar = Arrow(pos,speed,mode)
     arrowgroup.add(ar)
 def rungame(lvlname):
-    global player_mode,player,nowTick
+    
+    global player_mode,player,nowTick,gameEnd
+    
     loadLevel(lvlname)
     #init
     finishGame= False
@@ -256,30 +284,34 @@ def rungame(lvlname):
                     player.moveLeft=False
                 if event.key ==pygame.K_d:
                     player.moveRight=False
-                if event.key ==pygame.K_1:
-                    newarrow(50,10,0)
-                if event.key ==pygame.K_2:
-                    newarrow(150,10,0)
-                if event.key ==pygame.K_3:
-                    newarrow(250,10,0)
-                if event.key ==pygame.K_4:
-                    newarrow(350,10,0)
         #update
         
         player.update()
         for ar in arrowgroup:
             ar.update()
-        if nextTick==0:
-            levelEvent()
-            nextTick=6
-            nowTick+=1
-        nextTick-=1
-        if nowTick==levelTime:
-            return 100
-        screen.fill(backgroundColor)
 
-        #draw after here
+        # events
+        if nextTick==0: #once per tick
+            if gameEnd==-1:
+                levelEvent()
+            if player.HP==0 and gameEnd==-1: # game over
+                arrowgroup.empty()
+                gameEnd=10
+            if nowTick==levelTime and gameEnd==-1: # level clear
+                gameEnd=20
+            if gameEnd==0:
+                return int((float(nowTick)/float(levelTime)*float(100)))
+            elif gameEnd>0:
+                gameEnd-=1
+            elif gameEnd == -1:
+                nowTick+=1 # Now time (tick)
+            nextTick=6 # Frames before next tick
+        nextTick-=1
+        screen.fill(backgroundColor)
         
+        #draw after here
+        hpText=font.render('HP'+str(player.HP),False,(0,0,0))
+        screen.blit(hpText,(100,0))
         arrowgroup.draw(screen)
         playergroup.draw(screen)
         
@@ -287,6 +319,6 @@ def rungame(lvlname):
 
         #draw before here
         pygame.display.flip()
-
-rungame("Tutorial_1")
-pygame.quit()
+def run(lvn):
+    init()
+    return rungame(lvn)
