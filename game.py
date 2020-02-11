@@ -18,8 +18,6 @@ def init(scr):
     # make variables
     kr,kl,ku,kd=False,False,False,False
     size  = [1024,720]
-    
-    pygame.display.set_caption("Aroid InDev 0.0.3")
     clock = pygame.time.Clock()
     #load
     arrowgroup = pygame.sprite.Group()
@@ -32,6 +30,7 @@ def init(scr):
     shieldimg=[]
     shieldimg.append(pygame.image.load('images/shield_1.png').convert_alpha())
     shieldimg.append(pygame.image.load('images/shield_2.png').convert_alpha())
+    shieldimg.append(pygame.image.load('images/shield_3.png').convert_alpha())
     hasShield=pygame.image.load('images/has_shield.png').convert_alpha()
     hasnShield=pygame.image.load('images/hasn_shield.png').convert_alpha()
     # Initialize
@@ -170,6 +169,7 @@ class Player(Sprite):#(212,60),(812,660)
                 self.rect.x=self.rect.x+int(self.speed*0.7)
             else:
                 self.rect.x=self.rect.x+int(self.speed)
+        
         #Fix out of Field
         if self.rect.y> 592:
             self.rect.y=592
@@ -228,8 +228,11 @@ class Player(Sprite):#(212,60),(812,660)
     def draw():
         screen.blit(self.image,[self.rect.x,self.rect.y])
     def chmod(self,mode):
+        global shield
         self.mode = mode
         self.image=playerimg[mode]
+        shield.time=0
+        shield.rot=0
 class Shield(Sprite):
     def __init__(self):
         Sprite.__init__(self)
@@ -237,14 +240,27 @@ class Shield(Sprite):
         self.rect=self.image.get_rect()
         self.mode=0
         self.time=0
+        self.rot=0
     def update(self):
         global arrowgroup
         if self.time >0:
             self.time-=1
         if self.time==0:
             self.mode = 0
+        if player.mode == 3:
+            self.time=10000
+            self.mode=10
+            if kl==True:
+                self.rot+=6
+            if kr == True:
+                self.rot-=6
+            self.image=shieldimg[2]
+            self.image,self.rect=rotate(self.image,self.rect,self.rot)
         self.rect.x=player.rect.x-32
         self.rect.y=player.rect.y-32
+        if player.mode==3:
+            self.rect.x-=10
+            self.rect.y-=10
         self.mask=pygame.mask.from_surface(self.image)
         for ar in arrowgroup:
             if pygame.sprite.collide_mask(self,ar): # On Defend
@@ -269,10 +285,21 @@ class Shield(Sprite):
                     player.damage(1)
                 ar.kill()
                 del ar
+        
     def defense(self,mod): # On arrow key
         if player.mode == 0 or player.mode == 4:
             self.mode=mod
             self.time=20
+            self.image = shieldimg[0]
+            if self.mode==2:
+                self.image,self.rect=rotate(self.image,self.rect,90)
+            elif self.mode ==3:
+                self.image,self.rect=rotate(self.image,self.rect,180)
+            elif self.mode == 4:
+                self.image,self.rect=rotate(self.image,self.rect,270)
+        elif player.mode == 2:
+            self.mode=mod
+            self.time=10000
             self.image = shieldimg[0]
             if self.mode==2:
                 self.image,self.rect=rotate(self.image,self.rect,90)
@@ -296,7 +323,7 @@ class Shield(Sprite):
                 self.mode=0
                 self.time=0
     def draw(self,screen):
-        if self.mode !=0:
+        if self.mode !=0 and self.time!=0:
             screen.blit(self.image,(self.rect.x,self.rect.y))
 class Arrow(Sprite):
     def __init__(self,pos,speed,mode):
