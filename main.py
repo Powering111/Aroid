@@ -1,8 +1,11 @@
 import pygame
+from pygame.locals import *
 import game
 pygame.init()
-game.init()
-print(game.run('Tutorial_1'))
-game.init()
-print(game.run('Tutorial_1'))
+#def main():
+    #while True:
+
+screen= pygame.display.set_mode([1024,720],DOUBLEBUF)
+print(game.run('Tutorial_1',screen))
+
 pygame.quit()

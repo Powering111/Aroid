@@ -5,30 +5,35 @@ from pygame.surface import Surface
 from pygame.color import Color
 import queue
 
-def init():
-    global BLACK,WHITE,BLUE,GREEN,RED,size,screen,clock,arrowgroup,arrowimg,playerimg,font,backgroundColor,ongroundColor,levelName,levelAuthor,levelDifficulty,levelTime,level,gameEnd,nowTick,nextTick,nowEvent
+def init(scr):
+    global hasShield,hasnShield,kl,kr,ku,kd,BLACK,WHITE,BLUE,GREEN,RED,size,screen,clock,arrowgroup,arrowimg,playerimg,shieldimg,font,backgroundColor,ongroundColor,levelName,levelAuthor,levelDifficulty,levelTime,level,gameEnd,nowTick,nextTick,nowEvent
     # Initialize the game engine
-    pygame.init()
+    screen=scr
     pygame.font.init()
     BLACK= ( 0,  0,  0)
     WHITE= (255,255,255)
     BLUE = ( 0,  0,255)
     GREEN= ( 0,255,  0)
     RED  = (255,  0,  0)
-
     # make variables
+    kr,kl,ku,kd=False,False,False,False
     size  = [1024,720]
-    screen= pygame.display.set_mode(size,DOUBLEBUF)
-    pygame.display.set_caption("Aroid 1.0.0")
+    
+    pygame.display.set_caption("Aroid InDev 0.0.3")
     clock = pygame.time.Clock()
     #load
     arrowgroup = pygame.sprite.Group()
     arrowimg=[]
-    for x in range(2):
+    for x in range(10):
         arrowimg.append(pygame.image.load('images/arrow_'+str(x+1)+'.png').convert_alpha())
     playerimg=[]
     for x in range(4):
         playerimg.append(pygame.image.load('images/player_'+str(x+1)+'.png'))
+    shieldimg=[]
+    shieldimg.append(pygame.image.load('images/shield_1.png').convert_alpha())
+    shieldimg.append(pygame.image.load('images/shield_2.png').convert_alpha())
+    hasShield=pygame.image.load('images/has_shield.png').convert_alpha()
+    hasnShield=pygame.image.load('images/hasn_shield.png').convert_alpha()
     # Initialize
     font=pygame.font.Font('./NanumGothic.ttf',30)
     backgroundColor=WHITE
@@ -77,7 +82,7 @@ def levelEvent():
         elif eventType==3:
             t=level.get()
             if t==1:
-                player.mode=level.get()
+                player.chmod(level.get())
             elif t==2:
                 player.Damage(level.get())
             elif t==3:
@@ -106,7 +111,7 @@ def levelEvent():
         player.SPEED=200
     elif player.SPEED<20:
         player.SPEED=20
-    player.speed=int((player.SPEED*15)/100)
+    player.speed=int((player.SPEED*15)/100)# SPEED is Percent(%), speed is real one
     if player.HP>player.MHP:
         player.HP=player.MHP
     if player.DEF>3:
@@ -174,7 +179,7 @@ class Player(Sprite):#(212,60),(812,660)
             self.rect.x=212
         if self.rect.x>744:
             self.rect.x=744
-        for ar in arrowgroup:
+        for ar in arrowgroup: #player was hit by arrow
             if self.rect.colliderect(ar.rect):
                 #TODO make things
                 m=ar.mode
@@ -183,9 +188,31 @@ class Player(Sprite):#(212,60),(812,660)
                 elif m==1:
                     self.damage(2)
                     self.MHP+=1
+                elif m==2:
+                    self.damage(1)
+                    self.MHP-=1
+                elif m==3:
+                    self.damage(3)
+                elif m==4:
+                    self.damage(3)
+                    self.SPEED+=2
+                elif m==5:
+                    self.damage(3)
+                    self.SPEED-=2
+                elif m==6:
+                    self.damage(1)
+                    self.DEF+=1
+                elif m==7:
+                    self.damage(1)
+                elif m==8:
+                    self.damage(5)
+                elif m==9:
+                    self.damage(2)
+                    self.SPEED-=2
                 ar.kill()
                 del ar
     def damage(self,d):
+        global backgroundColor,bgci
         if self.SH==1:
             self.SH=0
             return
@@ -196,9 +223,81 @@ class Player(Sprite):#(212,60),(812,660)
             DEF-=d
             d=0
         self.HP-=d
+        bgci=10
         return
     def draw():
         screen.blit(self.image,[self.rect.x,self.rect.y])
+    def chmod(self,mode):
+        self.mode = mode
+        self.image=playerimg[mode]
+class Shield(Sprite):
+    def __init__(self):
+        Sprite.__init__(self)
+        self.image=shieldimg[0]
+        self.rect=self.image.get_rect()
+        self.mode=0
+        self.time=0
+    def update(self):
+        global arrowgroup
+        if self.time >0:
+            self.time-=1
+        if self.time==0:
+            self.mode = 0
+        self.rect.x=player.rect.x-32
+        self.rect.y=player.rect.y-32
+        self.mask=pygame.mask.from_surface(self.image)
+        for ar in arrowgroup:
+            if pygame.sprite.collide_mask(self,ar): # On Defend
+                m=ar.mode
+                if m==1:
+                    player.damage(5)
+                    player.MHP+=1
+                elif m==2:
+                    player.HP+=5
+                    player.MHP-=1
+                elif m==4:
+                    player.damage(1)
+                    player.SPEED+=4
+                elif m==5:
+                    player.damage(2)
+                    player.SH=1
+                elif m==6:
+                    player.DEF+=2
+                elif m==8:
+                    player.damage(30)
+                elif m==9:
+                    player.damage(1)
+                ar.kill()
+                del ar
+    def defense(self,mod): # On arrow key
+        if player.mode == 0 or player.mode == 4:
+            self.mode=mod
+            self.time=20
+            self.image = shieldimg[0]
+            if self.mode==2:
+                self.image,self.rect=rotate(self.image,self.rect,90)
+            elif self.mode ==3:
+                self.image,self.rect=rotate(self.image,self.rect,180)
+            elif self.mode == 4:
+                self.image,self.rect=rotate(self.image,self.rect,270)
+        elif player.mode == 1: # kl=LEFT,kr=RIGHT,ku=UP,kd=DOWN
+            self.image=shieldimg[1]
+            self.mode=5
+            self.time=20
+            if ku==True and kl==True and kr==False and kd==False: #left up
+                self.image,self.rect=rotate(self.image,self.rect,0)
+            elif ku==True and kr==True and kd==False and kl==False: #right up
+                self.image,self.rect=rotate(self.image,self.rect,270)
+            elif kr==True and kd==True and kl == False and ku == False: #right down
+                self.image,self.rect=rotate(self.image,self.rect,180)
+            elif kl==True and kd==True and kr == False and ku == False: #left down
+                self.image,self.rect=rotate(self.image,self.rect,90)
+            else :
+                self.mode=0
+                self.time=0
+    def draw(self,screen):
+        if self.mode !=0:
+            screen.blit(self.image,(self.rect.x,self.rect.y))
 class Arrow(Sprite):
     def __init__(self,pos,speed,mode):
         Sprite.__init__(self)
@@ -228,6 +327,7 @@ class Arrow(Sprite):
             self.image,self.rect=rotate(self.image,self.rect,270)
     def update(self):
         global player
+        self.mask=pygame.mask.from_surface(self.image)
         if self.pos>=0 and self.pos<100:
             self.rect.y=self.rect.y + self.speed
         elif self.pos>=100 and self.pos<200:
@@ -238,8 +338,15 @@ class Arrow(Sprite):
             self.rect.x=self.rect.x+self.speed
         if (self.rect.y >= 660 and (self.pos>=0 and self.pos<100)) or (self.rect.x<=212 and(self.pos>=100 and self.pos<200)) or (self.rect.y<=60 and (self.pos>=200 and self.pos<300)) or (self.rect.x>=812 and(self.pos>=300 and self.pos<400)):
             #TODO Event when Purple and pink and gray arrow
+            if self.mode == 3:
+                player.damage(5)
+            elif self.mode == 7:
+                player.damage(1)
+            elif self.mode==9:
+                player.SPEED-=2
             self.kill()
             del self
+        
     def draw():
         screen.blit(self.image,[self.rect.x,self.rect.y])
 
@@ -249,22 +356,26 @@ def newarrow(pos,speed,mode):
     arrowgroup.add(ar)
 def rungame(lvlname):
     
-    global player_mode,player,nowTick,gameEnd
+    global player_mode,player,nowTick,gameEnd,shield,bgci,kl,kr,ku,kd
     
     loadLevel(lvlname)
     #init
-    finishGame= False
     player = Player()
     playergroup=pygame.sprite.Group()
     playergroup.add(player)
+    shield=Shield()
     nextTick=0
-    while not finishGame:
+    bgci=0
+    ld=['TUTORIAL','EASY','MEDIUM','HARD','INSANE','EXTREME','CHAOS']
+    levelInfo1=font.render(levelName+' BY '+levelAuthor,True,(0,0,0))
+    levelInfo2=font.render(ld[levelDifficulty],True,(0,0,0))
+    while True:
         #set 60FPS
         clock.tick(60)
         #event get
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                finishGame=True
+                return int((float(nowTick)/float(levelTime)*float(100)))
             #WASD key input
             if event.type ==pygame.KEYDOWN:
                 if event.key==pygame.K_w:
@@ -275,6 +386,18 @@ def rungame(lvlname):
                     player.moveLeft=True
                 if event.key ==pygame.K_d:
                     player.moveRight=True
+                if event.key == pygame.K_UP:
+                    ku=True
+                    shield.defense(1)
+                if event.key == pygame.K_DOWN:
+                    kd=True
+                    shield.defense(3)
+                if event.key == pygame.K_LEFT:
+                    kl=True
+                    shield.defense(2)
+                if event.key == pygame.K_RIGHT:
+                    kr=True
+                    shield.defense(4)
             if event.type ==pygame.KEYUP:
                 if event.key==pygame.K_w:
                     player.moveUp=False
@@ -284,12 +407,20 @@ def rungame(lvlname):
                     player.moveLeft=False
                 if event.key ==pygame.K_d:
                     player.moveRight=False
+                if event.key == pygame.K_UP:
+                    ku=False
+                if event.key == pygame.K_DOWN:
+                    kd=False
+                if event.key == pygame.K_LEFT:
+                    kl=False
+                if event.key == pygame.K_RIGHT:
+                    kr=False
         #update
         
         player.update()
         for ar in arrowgroup:
             ar.update()
-
+        shield.update()
         # events
         if nextTick==0: #once per tick
             if gameEnd==-1:
@@ -307,18 +438,33 @@ def rungame(lvlname):
                 nowTick+=1 # Now time (tick)
             nextTick=6 # Frames before next tick
         nextTick-=1
-        screen.fill(backgroundColor)
-        
+        if bgci==0:
+            screen.fill(backgroundColor)
+        elif bgci >=1:
+            screen.fill((int(((10-bgci)*255+bgci*backgroundColor[0])/10),int((10-bgci)*backgroundColor[1]/10),int((10-bgci)*backgroundColor[2])/10))
+            bgci-=1
         #draw after here
-        hpText=font.render('HP'+str(player.HP),False,(0,0,0))
-        screen.blit(hpText,(100,0))
+        
         arrowgroup.draw(screen)
         playergroup.draw(screen)
-        
-        pygame.draw.rect(screen,ongroundColor,[212,60,600,600],5)
-
+        shield.draw(screen)
+        pygame.draw.rect(screen,ongroundColor,[212,60,600,600],5)# game box
+        # UI
+        hpText=font.render('HP '+str(player.HP),True,(0,0,0))
+        mhpText=font.render('/ '+str(player.MHP),True,(0,0,0))
+        defText=font.render('DEFENSE  '+str(player.DEF),True,(0,0,0))
+        screen.blit(hpText,(200,10))
+        screen.blit(mhpText,(300,10))
+        screen.blit(defText,(500,10))
+        screen.blit(levelInfo1,(200,670))
+        screen.blit(levelInfo2,(20,20))
+        if player.SH==0:
+            screen.blit(hasnShield,(700,10))
+        else:
+            screen.blit(hasShield,(700,10))
         #draw before here
         pygame.display.flip()
-def run(lvn):
-    init()
+def run(lvn,scr):
+    init(scr)
     return rungame(lvn)
+pygame.quit() # later delete
