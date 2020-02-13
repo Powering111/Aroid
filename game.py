@@ -6,7 +6,7 @@ from pygame.color import Color
 import queue
 
 def init(scr):
-    global hasShield,hasnShield,kl,kr,ku,kd,BLACK,WHITE,BLUE,GREEN,RED,size,screen,clock,arrowgroup,arrowimg,playerimg,shieldimg,font,backgroundColor,ongroundColor,levelName,levelAuthor,levelDifficulty,levelTime,level,gameEnd,nowTick,nextTick,nowEvent
+    global defimg,hasShield,hasnShield,kl,kr,ku,kd,BLACK,WHITE,BLUE,GREEN,RED,size,screen,clock,arrowgroup,arrowimg,playerimg,shieldimg,font,backgroundColor,ongroundColor,levelName,levelAuthor,levelDifficulty,levelTime,level,gameEnd,nowTick,nextTick,nowEvent
     # Initialize the game engine
     screen=scr
     pygame.font.init()
@@ -20,6 +20,9 @@ def init(scr):
     size  = [1024,720]
     clock = pygame.time.Clock()
     #load
+    defimg=[]
+    for x in range(4):
+        defimg.append(pygame.image.load('images/defPoint_'+str(x)+'.png').convert_alpha())
     arrowgroup = pygame.sprite.Group()
     arrowimg=[]
     for x in range(10):
@@ -147,7 +150,8 @@ class Player(Sprite):#(212,60),(812,660)
         self.IDEF=0
     def update(self):
         global arrowgroup
-        
+        if gameEnd>=0:
+            return
         #move variable
         if self.moveDown ==True and self.rect.y < 592:
             if self.moveLeft==True or self.moveRight==True:
@@ -220,7 +224,7 @@ class Player(Sprite):#(212,60),(812,660)
             d-=self.DEF
             self.DEF=0
         else:
-            DEF-=d
+            self.DEF-=d
             d=0
         self.HP-=d
         bgci=10
@@ -242,6 +246,8 @@ class Shield(Sprite):
         self.time=0
         self.rot=0
     def update(self):
+        if gameEnd>=0:
+            return
         global arrowgroup
         if self.time >0:
             self.time-=1
@@ -287,6 +293,8 @@ class Shield(Sprite):
                 del ar
         
     def defense(self,mod): # On arrow key
+        if gameEnd>=0:
+            return
         if player.mode == 0 or player.mode == 4:
             self.mode=mod
             self.time=20
@@ -479,10 +487,11 @@ def rungame(lvlname):
         # UI
         hpText=font.render('HP '+str(player.HP),True,(0,0,0))
         mhpText=font.render('/ '+str(player.MHP),True,(0,0,0))
-        defText=font.render('DEFENSE  '+str(player.DEF),True,(0,0,0))
+        pygame.draw.rect(screen,RED,[190,10,player.MHP*20,40],3)
+        pygame.draw.rect(screen,RED,[190,10,player.HP*20,40])
         screen.blit(hpText,(200,10))
         screen.blit(mhpText,(300,10))
-        screen.blit(defText,(500,10))
+        screen.blit(defimg[player.DEF],(600,10))
         screen.blit(levelInfo1,(200,670))
         screen.blit(levelInfo2,(20,20))
         if player.SH==0:
