@@ -86,8 +86,8 @@ class Button(Sprite):
     def click(self,mouse): #On click of button
         global screen,money,stagePercent
         if self.rect.collidepoint(mouse):
+            pygame.mixer.music.stop()
             if self.i1==0:
-                
                 m,sp,s1,s2=stageselect.run(screen,money,stagePercent)
                 if not m==-1:
                     if m==100 and stagePercent[s1][s2]!=100:
@@ -100,6 +100,10 @@ class Button(Sprite):
                 save()
                 pygame.quit()
                 sys.exit()
+            pygame.mixer.music.stop()
+            pygame.mixer.music.set_volume(1)
+            pygame.mixer.music.load('sounds/pazizik.wav')
+            pygame.mixer.music.play(-1)
 def main():
     global btnimg,mouse
     for x in range(9): 
@@ -114,6 +118,11 @@ def main():
         btnimg.append(pygame.image.load('images/btn_'+str(x+1)+'.png').convert_alpha())
     btn1=Button(0,1,420,350)
     btn2=Button(2,3,420,450)
+    
+    # background music
+    pygame.mixer.music.set_volume(1)
+    pygame.mixer.music.load('sounds/pazizik.wav')
+    pygame.mixer.music.play(-1)
     while not Terminate:
         for event in pygame.event.get():
             if event.type==pygame.QUIT:

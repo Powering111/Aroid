@@ -11,31 +11,7 @@ packs=['TUTORIAL','NAKG','EASY','MEDIUM','HARD','INSANE','EXTREME','CHAOS','HIDD
 stages=[2,2,2,2,2,2,2,2,2]
 giveMoney=[10,100,500,1000,1500,2000,3000,5000,10000]
 stage_name=[['Tutorial_1','Tutorial_2'],['Nakji-1','Nakji-2'],['easy-1','easy-2'],['medium-1','medium-2'],['hard-1','hard-2'],['insane-1','insane-2'],['extreme-1','super extreme'],['chaos-1','chaos0035'],['hidden-1','HIDDEN!!']]
-def endGame(percent):
-    global screen
-    Terminate=False
-    font=pygame.font.Font('./NanumGothic.ttf',60)
-    font2=pygame.font.Font('./NanumGothic.ttf',30)
-    text=None
-    if percent == 100:
-        text=font.render("큭큭 재미없다.깨서",True,(0,255,0))
-    else:
-        text=font.render("냥...죽었냥",True,(255,255,255))
-    while not Terminate:
-        for event in pygame.event.get(): 
-            if event.type==pygame.QUIT:
-                Terminate=True
-            if event.type==pygame.KEYDOWN and event.key==pygame.K_ESCAPE:
-                Terminate=True
-        if percent==100:
-            screen.fill(WHITE)
-            
-        else:
-            screen.fill(BLACK)
-        screen.blit(text,(300,300))
-        screen.blit(font2.render("ESC를 눌러 돌아가기",True,(255,255,0)),(10,10))
-        pygame.display.flip()
-    return percent
+
 def stage(a):
     global screen
     Terminate=False
@@ -52,7 +28,8 @@ def stage(a):
                 for i in range(stages[a]):
                     if kk==True:
                         if pygame.Rect(10,100*i+100,1000,80).collidepoint(pygame.mouse.get_pos()):
-                            return endGame(game.run(stage_name[a][i],screen)),i
+                            pygame.mixer.music.stop()
+                            return game.run(stage_name[a][i],screen),i
             if event.type==pygame.KEYDOWN and event.key==pygame.K_ESCAPE:
                 return -1,-1
         screen.fill(GREEN)
@@ -91,12 +68,16 @@ def setpos(a,x,y):
     a.rect.y=y
 def run(scr,m,sp):
     global btnimg,screen,money,stagePercent
+    # background music
+    pygame.mixer.music.stop()
+    pygame.mixer.music.set_volume(0.6)
+    pygame.mixer.music.load('sounds/simple.wav')
+    pygame.mixer.music.play(-1)
     money=m
     stagePercent=sp
     for x in range(9):
         for y in range(stages[x]):
             print("x"+str(x)+"  y:"+str(y)+"  h  "+str(stagePercent[x][y]))
-    
     screen=scr
     print('hi')
     btnimg=[]

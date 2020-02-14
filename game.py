@@ -4,7 +4,7 @@ from pygame.sprite import Sprite
 from pygame.surface import Surface
 from pygame.color import Color
 import queue
-
+import os
 def init(scr):
     global defimg,hasShield,hasnShield,kl,kr,ku,kd,BLACK,WHITE,BLUE,GREEN,RED,size,screen,clock,arrowgroup,arrowimg,playerimg,shieldimg,font,backgroundColor,ongroundColor,levelName,levelAuthor,levelDifficulty,levelTime,level,gameEnd,nowTick,nextTick,nowEvent
     # Initialize the game engine
@@ -48,6 +48,47 @@ def init(scr):
     nowTick=0
     gameEnd=-1
     nowEvent=queue.Queue()
+def endGame(lvn):
+    global screen
+    TERMINATE=False
+    mPc=0
+    while not TERMINATE:
+        print("sdfkj")
+        init(screen)
+        loadLevel(lvn)
+        percent=rungame(lvn)
+        print(percent)
+        Terminate=False
+        font=pygame.font.Font('./NanumGothic.ttf',60)
+        font2=pygame.font.Font('./NanumGothic.ttf',30)
+        text=None
+        if percent>mPc:
+            mPc=percent
+        if percent == 100:
+            text=font.render("큭큭 재미없다.깨서",True,(0,255,0))
+        else:
+            text=font.render("냥...죽었냥",True,(255,255,255))
+        while not Terminate:
+            for event in pygame.event.get(): 
+                if event.type==pygame.QUIT:
+                    Terminate=True
+                    TERMINATE=True
+                if event.type==pygame.KEYDOWN:
+                    if event.key==pygame.K_ESCAPE:
+                        Terminate=True
+                        TERMINATE=True
+                    if event.key==pygame.K_r:
+                        print("Restart")
+                        Terminate=True
+            if percent==100:
+                screen.fill(WHITE)
+            else:
+                screen.fill(BLACK)
+            screen.blit(text,(300,300))
+            screen.blit(font2.render("ESC를 눌러 돌아가기,R을 눌러 다시하기",True,(255,255,0)),(10,10))
+            pygame.display.flip()
+    print(mPc)
+    return mPc
 def loadLevel(levelfilename):
     global levelName,levelAuthor,levelDifficulty,levelTime,level
     #level load
@@ -56,6 +97,9 @@ def loadLevel(levelfilename):
     levelAuthor=lvl.readline()
     levelDifficulty=int(lvl.readline())
     levelTime = int(lvl.readline())
+    if(os.path.exists('levels/'+levelfilename+'/music.wav')):
+        pygame.mixer.music.load('levels/'+levelfilename+'/music.wav')
+        pygame.mixer.music.play(-1)
     #level load
     for nowsec in range(levelTime): # as 1 second
         oneline=lvl.readline().strip().split()# 1 line
@@ -389,10 +433,10 @@ def newarrow(pos,speed,mode):
     global arrowgroup
     ar = Arrow(pos,speed,mode)
     arrowgroup.add(ar)
-def rungame(lvlname):
+def rungame(lvlname): #returns percentage
     
     global player_mode,player,nowTick,gameEnd,shield,bgci,kl,kr,ku,kd
-    
+    print("Run Game")
     loadLevel(lvlname)
     #init
     player = Player()
@@ -479,7 +523,6 @@ def rungame(lvlname):
             screen.fill((int(((10-bgci)*255+bgci*backgroundColor[0])/10),int((10-bgci)*backgroundColor[1]/10),int((10-bgci)*backgroundColor[2])/10))
             bgci-=1
         #draw after here
-        
         arrowgroup.draw(screen)
         playergroup.draw(screen)
         shield.draw(screen)
@@ -502,5 +545,5 @@ def rungame(lvlname):
         pygame.display.flip()
 def run(lvn,scr):
     init(scr)
-    return rungame(lvn)
+    return endGame(lvn)
 pygame.quit() # later delete
