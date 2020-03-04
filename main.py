@@ -9,7 +9,7 @@ import stageselect
 from stageselect import stages
 pygame.init()
 screen= pygame.display.set_mode([1024,720],DOUBLEBUF)
-pygame.display.set_caption("Aroid InDev 0.0.4")
+pygame.display.set_caption("Aroid <ALPHA> 1.0")
 pygame.display.set_icon(pygame.image.load('images/icon.png'))
 pygame.font.init()
 BLACK= ( 0,  0,  0)
@@ -60,6 +60,7 @@ def load():
             for x in range(9):
                 data=[]
                 dat=str(file.readline()).strip().split()
+                print(stageselect.stages[x])
                 for y in range(stageselect.stages[x]):
                     data.append(int(dat[y]))
                 stagePercent.append(data)

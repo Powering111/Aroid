@@ -1,10 +1,6 @@
 #include <stdio.h>
-#include <cstdlib>
-#include <cstring>
+#include <windows.h>
 int main() 
-{ 
-   if (remove(strcat(std::getenv("APPDATA"),"\\Aroid\\save")) == 0) 
-      printf("RESETED");
-   else printf("FAILED..");
-   return 0; 
+{  
+	system("del %appdata%\\Aroid\\save");
 } 

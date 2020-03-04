@@ -65,9 +65,9 @@ def endGame(lvn):
         if percent>mPc:
             mPc=percent
         if percent == 100:
-            text=font.render("큭큭 재미없다.깨서",True,(0,255,0))
+            text=font.render("CLEAR",True,(0,255,0))
         else:
-            text=font.render("냥...죽었냥",True,(255,255,255))
+            text=font.render("GAME OVER",True,(255,255,255))
         while not Terminate:
             for event in pygame.event.get(): 
                 if event.type==pygame.QUIT:
@@ -84,7 +84,7 @@ def endGame(lvn):
                 screen.fill(WHITE)
             else:
                 screen.fill(BLACK)
-            screen.blit(text,(300,300))
+            screen.blit(text,(350,300))
             screen.blit(font2.render("ESC를 눌러 돌아가기,R을 눌러 다시하기",True,(255,255,0)),(10,10))
             pygame.display.flip()
     print(mPc)
@@ -130,7 +130,7 @@ def levelEvent():
             if t==1:
                 player.chmod(level.get())
             elif t==2:
-                player.Damage(level.get())
+                player.damage(level.get())
             elif t==3:
                 player.SH=level.get()
             elif t==4:
@@ -194,8 +194,6 @@ class Player(Sprite):#(212,60),(812,660)
         self.IDEF=0
     def update(self):
         global arrowgroup
-        if gameEnd>=0:
-            return
         #move variable
         if self.moveDown ==True and self.rect.y < 592:
             if self.moveLeft==True or self.moveRight==True:

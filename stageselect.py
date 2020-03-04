@@ -7,16 +7,19 @@ RED=(255,0,0)
 GREEN=(0,255,0)
 BLUE=(0,0,255)
 pygame.font.init()
-packs=['TUTORIAL','NAKG','EASY','MEDIUM','HARD','INSANE','EXTREME','CHAOS','HIDDEN']
-stages=[2,2,2,2,2,2,2,2,2]
-giveMoney=[10,100,500,1000,1500,2000,3000,5000,10000]
-stage_name=[['Tutorial_1','Tutorial_2'],['Nakji-1','Nakji-2'],['easy-1','easy-2'],['medium-1','medium-2'],['hard-1','hard-2'],['insane-1','insane-2'],['extreme-1','super extreme'],['chaos-1','chaos0035'],['hidden-1','HIDDEN!!']]
-
+stage_name=[]
+infofile=open('./levels/info','r')
+packs=infofile.readline().strip().split()
+giveMoney=list(map(int,infofile.readline().strip().split()))
+stages=list(map(int,infofile.readline().strip().split()))
+for x in range(len(packs)):
+    stage_name.append(infofile.readline().strip().split())
+stage_name
 def stage(a):
     global screen
     Terminate=False
     font=pygame.font.Font('./NanumGothic.ttf',40)
-    txt=font.render(packs[a-1],True,(0,0,0))
+    txt=font.render(packs[a],True,(0,0,0))
     font2=pygame.font.Font('./NanumGothic.ttf',20)
     txt2=font2.render('ESC를 눌러 돌아가기',True,(0,0,0))
     while not Terminate:
@@ -99,7 +102,7 @@ def run(scr,m,sp):
     screen.fill(WHITE)
     font1=pygame.font.Font('./NanumGothic.ttf',40)
     font2=pygame.font.Font('./NanumGothic.ttf',20)
-    txt1=font1.render('히히 제일 어려운 걸로 ㅋㅋ',True,(0,0,0))
+    txt1=font1.render('맵 팩 선택',True,(0,0,0))
     txt2=font2.render('Esc를 눌러 돌아가기',True,(0,0,0))
     Terminate=False
     while not Terminate:
